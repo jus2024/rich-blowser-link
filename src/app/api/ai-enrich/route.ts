@@ -53,14 +53,12 @@ export async function POST(request: NextRequest) {
 
   // 環境変数未設定時は空 EnrichmentResult を返す
   const modelId = process.env.BEDROCK_MODEL_ID;
+  const region = process.env.BEDROCK_REGION || "us-east-1";
   if (!modelId) {
-    console.log("[AI API] BEDROCK_MODEL_ID is not set, returning empty enrichment");
     return NextResponse.json(EMPTY_ENRICHMENT);
   }
 
   try {
-    console.log("[AI API] Starting enrichment for:", url, "modelId:", modelId, "region:", process.env.BEDROCK_REGION || "us-east-1");
-
     // プロンプト構築
     const prompt = buildEnrichmentPrompt({
       url,
@@ -73,19 +71,17 @@ export async function POST(request: NextRequest) {
     // Bedrock クライアント初期化
     const config = {
       modelId,
-      region: process.env.BEDROCK_REGION || "us-east-1",
+      region,
       timeout: 8000,
     };
     const client = createBedrockClient(config);
 
     // InvokeModel 呼び出し
     const rawResponse = await invokeModel(client, prompt, config);
-    console.log("[AI API] Bedrock raw response length:", rawResponse.length);
 
     // レスポンスパース
     const mapped = mapModelResponseFields(rawResponse);
     const result = parseEnrichmentResponse(mapped);
-    console.log("[AI API] Enrichment result:", JSON.stringify(result));
 
     return NextResponse.json(result);
   } catch (err) {

@@ -8,6 +8,7 @@ export interface UseAgentChatReturn {
   isLoading: boolean;
   error: string | null;
   sendMessage: (text: string) => Promise<void>;
+  resetSession: () => void;
 }
 
 /**
@@ -32,6 +33,11 @@ export function useAgentChat(
         abortControllerRef.current = null;
       }
     };
+  }, []);
+
+  const resetSession = useCallback(() => {
+    sessionIdRef.current = crypto.randomUUID();
+    setMessages([]);
   }, []);
 
   const sendMessage = useCallback(
@@ -119,5 +125,5 @@ export function useAgentChat(
     [runtimeArn],
   );
 
-  return { messages, isLoading, error, sendMessage };
+  return { messages, isLoading, error, sendMessage, resetSession };
 }

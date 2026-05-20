@@ -7,12 +7,14 @@ Element.prototype.scrollIntoView = vi.fn();
 
 // Mock useAgentChat
 const mockSendMessage = vi.fn();
+const mockResetSession = vi.fn();
 vi.mock("@/src/hooks/useAgentChat", () => ({
   useAgentChat: vi.fn(() => ({
     messages: [],
     isLoading: false,
     error: null,
     sendMessage: mockSendMessage,
+    resetSession: mockResetSession,
   })),
 }));
 
@@ -102,6 +104,7 @@ describe("AgentChatSection", () => {
       isLoading: false,
       error: "HTTP 500: Internal Server Error",
       sendMessage: mockSendMessage,
+      resetSession: mockResetSession,
     });
 
     render(<AgentChatSection runtimeArn="arn:aws:bedrock-agentcore:us-west-2:123:runtime/test" />);
@@ -120,6 +123,7 @@ describe("AgentChatSection", () => {
       isLoading: false,
       error: "Network error",
       sendMessage: mockSendMessage,
+      resetSession: mockResetSession,
     });
 
     render(<AgentChatSection runtimeArn="arn:aws:bedrock-agentcore:us-west-2:123:runtime/test" />);

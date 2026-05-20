@@ -22,7 +22,7 @@ interface AgentChatSectionProps {
  * - 認証トークンは各リクエストに付与 (Req 9.10, useAgentChat 内で処理)
  */
 export default function AgentChatSection({ runtimeArn }: AgentChatSectionProps) {
-  const { messages, isLoading, error, sendMessage } = useAgentChat(runtimeArn);
+  const { messages, isLoading, error, sendMessage, resetSession } = useAgentChat(runtimeArn);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const isRuntimeConfigured = !!runtimeArn?.trim();
@@ -70,16 +70,43 @@ export default function AgentChatSection({ runtimeArn }: AgentChatSectionProps) 
         overflow: "hidden",
       }}
     >
-      <h2
-        id="agent-chat-heading"
+      <div
         style={{
-          fontSize: "1.1rem",
-          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           marginBottom: "0.25rem",
         }}
       >
-        AI Bookmark 検索
-      </h2>
+        <h2
+          id="agent-chat-heading"
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            margin: 0,
+          }}
+        >
+          AI Bookmark 検索
+        </h2>
+        <button
+          type="button"
+          onClick={resetSession}
+          disabled={isLoading}
+          aria-label="新しい会話を開始"
+          style={{
+            fontSize: "0.75rem",
+            padding: "0.25rem 0.5rem",
+            borderRadius: "var(--radius, 0.375rem)",
+            border: "1px solid var(--color-border, #d1d5db)",
+            backgroundColor: "transparent",
+            color: "var(--color-text-secondary, #6b7280)",
+            cursor: isLoading ? "not-allowed" : "pointer",
+            opacity: isLoading ? 0.5 : 1,
+          }}
+        >
+          新しい会話
+        </button>
+      </div>
       <p
         style={{
           color: "var(--color-text-secondary, #6b7280)",

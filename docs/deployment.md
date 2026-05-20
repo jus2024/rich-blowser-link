@@ -57,8 +57,8 @@ Cognito の情報を使って JWT 認証を設定します。`<User Pool ID>` �
 
 ```bash
 agentcore configure \
-  --entrypoint sample_agent/app.py \
-  --name sample_agent \
+  --entrypoint bookmark_agent/app.py \
+  --name bookmark_agent \
   --authorizer-config '{"customJWTAuthorizer":{"discoveryUrl":"https://cognito-idp.<region>.amazonaws.com/<User Pool ID>/.well-known/openid-configuration","allowedClients":["<Client ID>"]}}' \
   --region us-west-2
 ```
@@ -92,9 +92,11 @@ Amplify コンソール → アプリ → ホスティング → 環境変数:
 
 | キー | 値 |
 |------|-----|
-| `NEXT_PUBLIC_AGENTCORE_RUNTIME_ARN` | 手順 2-3 で取得した ARN |
+| `BEDROCK_MODEL_ID` | Bedrock モデル ID（例: `anthropic.claude-3-haiku-20240307-v1:0`） |
+| `BEDROCK_REGION` | Bedrock リージョン（例: `us-east-1`） |
+| `NEXT_PUBLIC_AGENTCORE_RUNTIME_ARN` | 手順 2-3 で取得した ARN（エージェント機能を使う場合） |
 
-設定後、再デプロイ（再ビルドをトリガー、または Git push）すれば `/sample` ページのエージェントチャットが接続可能になります。
+設定後、再デプロイ（再ビルドをトリガー、または Git push）すればトップページのエージェントチャットが接続可能になります。
 
 ## 注意事項
 
@@ -102,6 +104,19 @@ Amplify コンソール → アプリ → ホスティング → 環境変数:
 - `agentcore configure` で `--authorizer-config` を省略すると JWT 認証設定がリセットされます。環境変数を更新する際も毎回含めてください
 - Amplify のビルド環境は Docker 非対応のため、AgentCore Runtime を Amplify の CDK スタックに含めないでください
 - sandbox の Cognito と AgentCore Runtime の Cognito は異なるため、sandbox 環境での結合テストは不可です。結合テストは Amplify develop 環境で行ってください
+- **Amplify Hosting の SSR 実行ロールに `bedrock:InvokeModel` 権限が必要です**。AI 補完（`/api/ai-enrich`）は API Route（サーバーサイド）から Bedrock を呼び出すため、Amplify が自動作成する IAM ロールにインラインポリシーを追加してください：
+  ```json
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "bedrock:InvokeModel",
+        "Resource": "arn:aws:bedrock:*::foundation-model/*"
+      }
+    ]
+  }
+  ```
 
 ## 4. プログラム更新時のデプロイ
 
