@@ -208,19 +208,20 @@ export function useBookmarks(): UseBookmarksReturn {
       let token: string | null = null;
 
       do {
-        const response = await client.models.Bookmark.list({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await client.models.Bookmark.list({
           limit: 100,
           nextToken: token,
         });
         if (response.errors && response.errors.length > 0) break;
         for (const record of response.data ?? []) {
           results.push({
-            id: record.id,
-            url: record.url,
-            ogpImageUrl: record.ogpImageUrl ?? "",
+            id: record.id as string,
+            url: record.url as string,
+            ogpImageUrl: (record.ogpImageUrl as string) ?? "",
           });
         }
-        token = response.nextToken ?? null;
+        token = (response.nextToken as string | null) ?? null;
       } while (token);
 
       return results;
