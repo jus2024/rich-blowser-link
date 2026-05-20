@@ -1,0 +1,53 @@
+/* StatusBadge: Bookmark ステータス表示バッジ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* inbox: 青 / primary */
+.inbox {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* read: 緑 / success */
+.read {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* archived: グレー / muted */
+.archived {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .inbox {
+    background-color: #0c2d48;
+    color: #7dd3fc;
+    border-color: #0e4166;
+  }
+
+  .read {
+    background-color: #052e16;
+    color: #86efac;
+    border-color: #14532d;
+  }
+
+  .archived {
+    background-color: #1f2937;
+    color: #9ca3af;
+    border-color: #374151;
+  }
+}

@@ -1,0 +1,17 @@
+/* ファビコン表示コンポーネント */
+
+.favicon {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  color: var(--color-text-secondary, #6b7280);
+  flex-shrink: 0;
+}

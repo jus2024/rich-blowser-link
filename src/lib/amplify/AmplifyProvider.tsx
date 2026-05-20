@@ -10,6 +10,10 @@ import "@aws-amplify/ui-react/styles.css";
  * モジュール読み込み時に同期的に Amplify.configure() を実行する。
  * amplify_outputs.json が存在しない場合（sandbox 未起動時）は
  * configure をスキップし、コンソールに案内を出す。
+ *
+ * Authenticator コンポーネントで子要素をラップし、
+ * 未認証時はログイン画面を表示する。
+ * トークンが無効または有効期限切れの場合も自動的にログイン画面にリダイレクトされる。
  */
 let configured = false;
 
@@ -35,5 +39,10 @@ export default function AmplifyProvider({
   if (!configured) {
     return <>{children}</>;
   }
-  return <Authenticator>{children}</Authenticator>;
+
+  return (
+    <Authenticator>
+      {children}
+    </Authenticator>
+  );
 }

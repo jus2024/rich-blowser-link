@@ -1,6 +1,6 @@
 """ローカル実行スクリプト
 
-サンプルエージェントを対話的に実行します。
+Bookmark エージェントを対話的に実行します。
 
 使い方:
     cd agents
@@ -14,17 +14,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from common.logging import setup_logger
-from sample_agent.agent import create_agent
+from bookmark_agent.agent import create_agent
 
 logger = setup_logger("run_local")
 
 
 def main() -> None:
     """エージェントを起動してテストメッセージを送信する"""
-    logger.info("サンプルエージェントを起動します")
+    logger.info("Bookmark エージェントを起動します")
     agent = create_agent()
 
-    test_message = "今の時刻を教えてください。"
+    test_message = "ブックマークを検索して"
     logger.info("テストメッセージ: %s", test_message)
 
     response = agent(test_message)

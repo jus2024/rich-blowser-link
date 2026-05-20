@@ -41,7 +41,14 @@ agents/__pycache__/
 agents/**/__pycache__/
 agents/*.egg-info/
 agents/.env
+agents/.env.local
 *.pyc
+
+# Python テスト・リンターキャッシュ
+agents/.pytest_cache/
+agents/.hypothesis/
+agents/.ruff_cache/
+agents/.mypy_cache/
 
 # AgentCore CLI
 agents/.bedrock_agentcore.yaml

@@ -1,58 +1,96 @@
-# Amplify Gen 2 業務 Web アプリテンプレート
+# Rich Browser Link
 
-AWS Amplify Gen 2 を中核にした業務 Web アプリケーション用のスターターテンプレートです。
-オプションで Strands Agents による AI エージェント機能を追加できます。
+AI 補完付きブックマーク管理 Web アプリケーション。AWS Amplify Gen 2 をバックエンドに、オプションで Strands Agents による AI エージェントチャット機能を備えています。
 
-## 想定ユースケース
+## 主な機能
 
-1. 標準的な業務 Web アプリケーション
-2. AI エージェント機能を含む業務 Web アプリケーション
-
-Web アプリケーションがデフォルトの主役です。エージェント機能はオプション拡張として必要な場合のみ追加します。
+- **ブックマーク管理** — URL 登録、OGP メタデータ自動取得、タグ・Collection による整理
+- **AI Bookmark Enrichment** — Amazon Bedrock による自動タグ付け、メモ生成、タイトル・説明補完
+- **バッチ AI 補完** — インポート時の大量ブックマークに対するキュー方式の全件 AI 補完
+- **ブックマークインポート** — ブラウザエクスポートファイル（HTML）からの一括取り込み、フォルダ構成引き継ぎ or フラットインポート選択
+- **Collection & Tag** — 階層 Collection、タグフィルタ、ドラッグ&ドロップ整理
+- **AI エージェントチャット**（任意）— AgentCore Runtime 上の Strands Agent とリアルタイム対話
+- **レスポンシブ対応** — デスクトップ3カラム、モバイルはオーバーレイ展開
 
 ## 技術スタック
 
 | レイヤー | 技術 |
 |---------|------|
-| フロントエンド | Next.js + TypeScript |
-| バックエンド | AWS Amplify Gen 2 |
+| フロントエンド | Next.js 15 + TypeScript |
+| バックエンド | AWS Amplify Gen 2（AppSync + DynamoDB + Cognito） |
+| AI 補完 | Amazon Bedrock（Claude） |
 | エージェント（任意） | Python 3.10+ / Strands Agents SDK |
 | エージェント実行基盤（任意） | Amazon Bedrock AgentCore Runtime |
 | ホスティング | Amplify Hosting |
-| リポジトリ | GitHub |
+| テスト | Vitest + React Testing Library |
 | IDE 支援 | Kiro |
 
 ## ディレクトリ構成
 
 ```
-src/                    # フロントエンド（Next.js App Router）
-  app/                  # ページとレイアウト
-  app/sample/           # サンプルページ（Todo + エージェントチャット）
-  components/agent/     # エージェントチャット UI コンポーネント
-  hooks/                # カスタムフック
-  lib/                  # ユーティリティ（Amplify 設定、AgentCore 通信）
-  types/                # 型定義
-amplify/                # Amplify Gen 2 バックエンド定義
-agents/                 # Strands エージェント（任意）
-docs/                   # ドキュメント
-.kiro/                  # Kiro ワークスペース設定
-.github/                # CI/CD とリポジトリテンプレート
+src/
+  app/                    # Next.js App Router（ページ、API Routes）
+    api/ogp/              # OGP メタデータ取得 API
+    api/ai-enrich/        # AI 補完 API（Bedrock 呼び出し）
+  components/
+    agent/                # エージェントチャット UI
+    ai/                   # AI 補完進捗バー
+    bookmark/             # ブックマーク CRUD コンポーネント
+    collection/           # Collection 管理コンポーネント
+    import/               # インポートダイアログ
+    layout/               # レイアウト（サイドバー、オーバーレイ）
+    search/               # 検索バー
+    tag/                  # タグフィルタ
+    filter/               # ステータスフィルタ
+    dnd/                  # ドラッグ&ドロップ
+  hooks/                  # カスタムフック
+  lib/
+    ai/                   # EnrichmentQueue、AI 関連ユーティリティ
+    agent/                # AgentCore Runtime 通信
+    amplify/              # Amplify 設定・プロバイダー
+    import/               # インポートパーサー
+  types/                  # 型定義
+amplify/                  # Amplify Gen 2 バックエンド定義
+agents/                   # Strands エージェント（任意）
+  bookmark_agent/         # ブックマーク操作エージェント
+  common/                 # 共通設定・ログ
+  scripts/                # ローカル実行スクリプト
+docs/                     # ドキュメント
+.kiro/                    # Kiro ワークスペース設定
+.github/                  # CI/CD ワークフロー
 ```
 
-## クイックスタート（サンプルを動かす）
+## データモデル
 
-テンプレートからリポジトリを作成し、サンプルページを動かすまでの手順です。
+| モデル | 説明 |
+|--------|------|
+| Bookmark | URL、OGP メタデータ、AI 補完結果、ステータス、ピン留め |
+| Tag | ブックマークに付与するラベル |
+| BookmarkTag | Bookmark ↔ Tag 多対多中間テーブル |
+| Collection | ブックマークをまとめるフォルダ（階層対応） |
+| BookmarkCollection | Bookmark ↔ Collection 多対多中間テーブル |
 
-### 1. リポジトリの作成とセットアップ
+すべてのモデルに owner-based authorization を適用し、Cognito ユーザー ID によるデータ分離を実現しています。
+
+## クイックスタート
+
+### 前提条件
+
+- Node.js 20+
+- npm
+- AWS アカウントと認証情報（`aws configure` 済み）
+
+### セットアップ
 
 ```bash
-# GitHub で "Use this template" → 新しいリポジトリを作成 → クローン
 git clone <リポジトリURL>
-cd <プロジェクト名>
+cd rich-blowser-link
 npm ci
+cp .env.example .env.local
+# .env.local を編集（BEDROCK_MODEL_ID, BEDROCK_REGION を設定）
 ```
 
-### 2. Web アプリの起動（Todo サンプル）
+### 開発サーバーの起動
 
 ```bash
 # ターミナル 1: Amplify sandbox を起動（初回は数分かかります）
@@ -62,150 +100,99 @@ npx ampx sandbox
 npm run dev
 ```
 
-ブラウザで `http://localhost:3000/sample` にアクセスすると、Todo リストのサンプルが動作します。
+ブラウザで `http://localhost:3000` にアクセスするとアプリが動作します。
 
-### 3. エージェントチャットの有効化（任意）
+### AI 補完を有効にする
 
-エージェントチャットを動かすには、追加で AgentCore Runtime のデプロイが必要です。
+`.env.local` に以下を設定:
+
+```
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_REGION=us-east-1
+```
+
+AI 補完は Next.js API Route（`/api/ai-enrich`）経由で Bedrock を呼び出します。sandbox 環境でも動作します。
+
+### エージェントチャットの有効化（任意）
+
+エージェントチャットは AgentCore Runtime へのデプロイが必要です。sandbox の Cognito と AgentCore の Cognito は異なるため、**sandbox 環境での結合テストは不可**です。
+
+エージェント単体のローカル動作確認:
 
 ```bash
-# エージェントのセットアップ
 cd agents
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-# 環境変数の設定
-cp .env.example .env
-# .env を編集して必要な値を設定
-
 # ローカルでの動作確認（AgentCore Runtime 不要）
 python scripts/run_local.py
 ```
 
-本番デプロイの手順は [docs/deployment.md](docs/deployment.md) を参照してください。
-デプロイ後、Amplify コンソールで `NEXT_PUBLIC_AGENTCORE_RUNTIME_ARN` を設定すると `/sample` ページのエージェントチャットが有効になります。
+フロントエンドとの結合テストは Amplify develop 環境で行ってください。詳細は [docs/deployment.md](docs/deployment.md) を参照。
 
-## プログラム更新時のデプロイ
-
-### フロントエンドの更新
+## テスト
 
 ```bash
-git add -A
-git commit -m "変更内容の説明"
-git push origin <ブランチ名>
+# ユニットテスト
+npx vitest --run
+
+# 型チェック
+npx tsc --noEmit
+
+# lint
+npx next lint
 ```
 
-Amplify Hosting が Git push を検知して自動ビルド・デプロイします。
+## デプロイ
 
-### エージェントの更新
+Amplify Hosting（フロントエンド + Cognito）と AgentCore Runtime（エージェント）は別々にデプロイします。
+
+### フロントエンドのデプロイ
+
+```bash
+git push origin main  # Amplify Hosting が自動ビルド・デプロイ
+```
+
+Amplify コンソールで以下の環境変数を設定:
+
+| キー | 値 |
+|------|-----|
+| `BEDROCK_MODEL_ID` | Bedrock モデル ID |
+| `BEDROCK_REGION` | Bedrock リージョン |
+| `NEXT_PUBLIC_AGENTCORE_RUNTIME_ARN` | AgentCore Runtime ARN（任意） |
+
+### エージェントのデプロイ（任意）
 
 ```bash
 cd agents
 agentcore deploy --auto-update-on-conflict
 ```
 
-`--auto-update-on-conflict` を付けると、既存の Runtime 設定（JWT 認証、環境変数など）を維持したまま更新されます。
-
-### 両方を更新する場合
-
-エージェント側を先にデプロイしてください。フロントエンドが新しい API を呼ぶ場合、エージェント側が先に対応している必要があります。
+詳細な手順は [docs/deployment.md](docs/deployment.md) を参照してください。
 
 ## お片付け（リソース削除）
 
-### Amplify sandbox の停止
-
 ```bash
+# Amplify sandbox の停止
 npx ampx sandbox delete
+
+# AgentCore Runtime の削除（使っている場合）
+cd agents && agentcore destroy
 ```
 
-sandbox で作成された一時的なバックエンドリソース（AppSync、DynamoDB、Cognito など）が削除されます。
-
-### AgentCore Runtime の削除
-
-```bash
-cd agents
-agentcore destroy
-```
-
-AgentCore Runtime とそれに紐づくリソースが削除されます。
-
-### Amplify Hosting の削除
-
-AWS コンソール → Amplify → アプリを選択 → 「アプリの設定」→「全般」→「アプリを削除」
-
-Cognito User Pool を含むバックエンドリソースも一緒に削除されます。
+Amplify Hosting の削除は AWS コンソールから行います。
 
 ## ブランチ戦略
 
 | ブランチ | 用途 |
 |---------|------|
 | `main` | 本番向け |
-| `develop` | 統合ブランチ |
+| `develop` | 統合ブランチ（結合テスト環境） |
 | `feature/*` | 実装作業用 |
 
-## デプロイ
+## ドキュメント
 
-Amplify Hosting（フロントエンド + Cognito）と AgentCore Runtime（エージェント）は別々にデプロイします。
-
-### 概要
-
-1. **Amplify Hosting に接続** — GitHub リポジトリを接続し、Cognito User Pool ID と Client ID を控える
-2. **AgentCore Runtime にデプロイ**（任意）— `agentcore configure` で JWT 認証を設定し、`agentcore deploy` でデプロイ
-3. **環境変数を設定** — Amplify コンソールで `NEXT_PUBLIC_AGENTCORE_RUNTIME_ARN` を設定して再デプロイ
-
-詳細な手順は [docs/deployment.md](docs/deployment.md) を参照してください。
-
-### CI/CD
-
-| 対象 | 担当 | 方法 |
-|------|------|------|
-| Web アプリ（品質ゲート） | GitHub Actions | lint、型チェック |
-| Web アプリ（ビルド・デプロイ） | Amplify Hosting | Git push で自動デプロイ |
-| エージェント（品質ゲート） | GitHub Actions | lint、インポート確認（別ワークフロー） |
-| エージェント（デプロイ） | AgentCore CLI | `agentcore deploy` で手動デプロイ |
-
-## サンプルページ
-
-`/sample` ページには2つのサンプルが含まれています:
-
-- **Todo リスト** — Amplify Data（AppSync + DynamoDB）との CRUD 連携デモ
-- **エージェントチャット** — AgentCore Runtime との HTTP SSE ストリーミング対話デモ
-
-詳細は [docs/sample/](docs/sample/) を参照してください。
-
-### サンプルを除去して開発を始める
-
-テンプレートから自分のプロジェクトを始める際、サンプルコードは以下の手順で除去できます。
-
-**フロントエンド:**
-
-1. `src/app/sample/` を削除
-2. `src/components/agent/` を削除
-3. `src/hooks/useAgentChat.ts` を削除
-4. `src/lib/agent/agentRuntime.ts` を削除
-5. `src/app/page.tsx` のフッターから `/sample` へのリンクを削除
-6. `amplify/data/resource.ts` の `Todo` モデルを自分のモデルに置き換え
-
-**エージェント（使わない場合）:**
-
-7. `agents/` ディレクトリごと削除
-
-**エージェント（使う場合）:**
-
-7. `agents/sample_agent/` を削除し、新しいエージェントを作成
-8. `agents/.bedrock_agentcore.yaml` の `entrypoint` を新しいエージェントのパスに変更（または `agentcore configure` で再設定）
-9. `agents/scripts/run_local.py` の import を新しいエージェントに合わせて変更
-10. `agents/common/`（config, logging）はそのまま利用可能
-
-**ドキュメント:**
-
-11. `docs/sample/` を削除
-12. `README.md` のサンプル関連セクションを書き換え
-
-## 注意事項
-
-- デフォルトの AWS リージョンは `us-west-2`（オレゴン）を想定しています。変更する場合は `.env.local`、`agents/.env`、AWS プロファイルのリージョン設定を合わせてください
-- シークレットや認証情報をコミットしない
-- テンプレートは汎用的に保つ
-- プロジェクト固有のビジネスロジックは、テンプレートから新規リポジトリを作成した後に追加する
+- [セットアップガイド](docs/setup.md)
+- [デプロイガイド](docs/deployment.md)
+- [Kiro の使い方](docs/kiro-usage.md)

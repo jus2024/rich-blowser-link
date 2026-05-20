@@ -121,7 +121,7 @@ export async function invokeRuntime(params: {
         "Content-Type": "application/json",
         "X-Amzn-Bedrock-AgentCore-Runtime-Session-Id": params.sessionId,
       },
-      body: JSON.stringify({ prompt: params.prompt }),
+      body: JSON.stringify({ prompt: params.prompt, access_token: params.accessToken }),
       signal: params.signal,
     });
 

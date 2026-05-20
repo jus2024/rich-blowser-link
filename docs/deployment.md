@@ -1,5 +1,6 @@
 # デプロイガイド
 
+Rich Browser Link のデプロイガイドです。
 Amplify Hosting（フロントエンド + Cognito）と AgentCore Runtime（エージェント）は別々にデプロイします。
 
 ## 1. Amplify Hosting（フロントエンド）

@@ -1,0 +1,73 @@
+/* OGP プレビューカードのスタイル（ホバー時に BookmarkCard の上に浮かぶカード） */
+
+.card {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 9999;
+  width: min(360px, 100%);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+  color: var(--color-text);
+}
+
+.imageWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.placeholder {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.35;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+/*
+ * ビューポート境界考慮ポジショニング適用時のスタイル。
+ * Requirements 4.6: fixed ポジショニングで top/left を親コンポーネント側から
+ * 直接指定するため、デフォルトの相対配置 (top/left) を無効化する。
+ */
+.cardFixed {
+  top: auto;
+  left: auto;
+}

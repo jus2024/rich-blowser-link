@@ -1,0 +1,18 @@
+/* DroppableCollection ドロップターゲットのスタイル */
+
+.droppable {
+  /* 要件 2.4 用の視覚ハイライト領域。
+   * CollectionList の項目を包むラッパーとして、ボタンとコンテキストメニューを
+   * 横並びで配置できるよう flex レイアウトにする。 */
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.droppableOver {
+  border-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}

@@ -1,0 +1,22 @@
+/* StatusSelector: ステータス変更セレクター */
+
+.select {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.select:hover {
+  background-color: var(--color-bg);
+}
+
+.select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
