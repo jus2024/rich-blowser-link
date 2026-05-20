@@ -133,9 +133,7 @@ export function useBookmarks(): UseBookmarksReturn {
         if (mode === "initial") {
           const all: Bookmark[] = [];
           let nextPageToken: string | null = null;
-          // eslint-disable-next-line no-constant-condition
           while (true) {
-            // eslint-disable-next-line no-await-in-loop
             const listResult = await client.models.Bookmark.list(
               nextPageToken ? { limit: 100, nextToken: nextPageToken } : { limit: 100 },
             ) as { data: BookmarkRecord[]; errors?: { message: string }[]; nextToken?: string | null };
@@ -208,20 +206,19 @@ export function useBookmarks(): UseBookmarksReturn {
       let token: string | null = null;
 
       do {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response: any = await client.models.Bookmark.list({
+        const response = await client.models.Bookmark.list({
           limit: 100,
           nextToken: token,
-        });
+        }) as { data: Array<{ id: string; url: string; ogpImageUrl?: string | null }>; errors?: Array<unknown>; nextToken?: string | null };
         if (response.errors && response.errors.length > 0) break;
         for (const record of response.data ?? []) {
           results.push({
-            id: record.id as string,
-            url: record.url as string,
-            ogpImageUrl: (record.ogpImageUrl as string) ?? "",
+            id: record.id,
+            url: record.url,
+            ogpImageUrl: record.ogpImageUrl ?? "",
           });
         }
-        token = (response.nextToken as string | null) ?? null;
+        token = response.nextToken ?? null;
       } while (token);
 
       return results;
