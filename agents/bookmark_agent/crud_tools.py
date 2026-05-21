@@ -58,10 +58,11 @@ def create_bookmark(url: str, owner_id: str) -> str:
 
         # UUID v4 で ID 生成
         bookmark_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
-        # DynamoDB PutItem
+        # DynamoDB PutItem（Amplify 互換フィールドを含む）
         item = {
+            "__typename": "Bookmark",
             "id": bookmark_id,
             "url": url,
             "title": "",
@@ -69,6 +70,11 @@ def create_bookmark(url: str, owner_id: str) -> str:
             "memo": "",
             "ogpImageUrl": "",
             "status": "inbox",
+            "accessCount": 0,
+            "lastAccessedAt": "",
+            "isReadable": False,
+            "sortOrder": 0,
+            "pinned": False,
             "owner": owner_id,
             "createdAt": now,
             "updatedAt": now,
@@ -127,9 +133,12 @@ def _find_or_create_tag(dynamodb, table_names: dict, tag_name: str, owner_id: st
     tag_id = str(uuid.uuid4())
     tag_table.put_item(
         Item={
+            "__typename": "Tag",
             "id": tag_id,
             "name": tag_name,
             "owner": owner_id,
+            "createdAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+            "updatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         }
     )
     logger.info("タグを新規作成しました: id='%s', name='%s'", tag_id, tag_name)
@@ -159,10 +168,13 @@ def _find_or_create_collection(
     collection_id = str(uuid.uuid4())
     collection_table.put_item(
         Item={
+            "__typename": "Collection",
             "id": collection_id,
             "name": collection_name,
             "description": "",
             "owner": owner_id,
+            "createdAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+            "updatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         }
     )
     logger.info(
@@ -276,12 +288,16 @@ def update_bookmark(
                 tag_id = _find_or_create_tag(dynamodb, table_names, tag_name, owner_id)
                 # BookmarkTag PutItem
                 bookmark_tag_id = str(uuid.uuid4())
+                now_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                 bookmark_tag_table.put_item(
                     Item={
+                        "__typename": "BookmarkTag",
                         "id": bookmark_tag_id,
                         "bookmarkId": bookmark_id,
                         "tagId": tag_id,
                         "owner": owner_id,
+                        "createdAt": now_ts,
+                        "updatedAt": now_ts,
                     }
                 )
                 added_tags.append(tag_name)
@@ -338,12 +354,16 @@ def update_bookmark(
                 )
                 # BookmarkCollection PutItem
                 bookmark_collection_id = str(uuid.uuid4())
+                now_ts2 = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                 bookmark_collection_table.put_item(
                     Item={
+                        "__typename": "BookmarkCollection",
                         "id": bookmark_collection_id,
                         "bookmarkId": bookmark_id,
                         "collectionId": collection_id,
                         "owner": owner_id,
+                        "createdAt": now_ts2,
+                        "updatedAt": now_ts2,
                     }
                 )
                 added_collections.append(collection_name)
@@ -655,12 +675,16 @@ def enrich_bookmark(bookmark_id: str, owner_id: str) -> str:
                 )
                 if not existing_bt.get("Items"):
                     bookmark_tag_id = str(uuid.uuid4())
+                    now_tag = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                     bookmark_tag_table.put_item(
                         Item={
+                            "__typename": "BookmarkTag",
                             "id": bookmark_tag_id,
                             "bookmarkId": bookmark_id,
                             "tagId": tag_id,
                             "owner": owner_id,
+                            "createdAt": now_tag,
+                            "updatedAt": now_tag,
                         }
                     )
                     added_tags.append(tag_name)
@@ -689,12 +713,16 @@ def enrich_bookmark(bookmark_id: str, owner_id: str) -> str:
             )
             if not existing_bc.get("Items"):
                 bookmark_collection_id = str(uuid.uuid4())
+                now_col = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                 bookmark_collection_table.put_item(
                     Item={
+                        "__typename": "BookmarkCollection",
                         "id": bookmark_collection_id,
                         "bookmarkId": bookmark_id,
                         "collectionId": collection_id,
                         "owner": owner_id,
+                        "createdAt": now_col,
+                        "updatedAt": now_col,
                     }
                 )
                 applied_updates.append(f"コレクション追加: {suggested_collection}")

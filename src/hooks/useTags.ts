@@ -131,10 +131,10 @@ export function useTags(): UseTagsReturn {
   useEffect(() => {
     if (!client) return;
     const tagSub = client.models.Tag.observeQuery().subscribe({
-      next: ({ items }) => setRawTags(items.map(toTag)),
+      next: ({ items }) => setRawTags(items.filter((i) => i != null).map(toTag)),
     });
     const bookmarkTagSub = client.models.BookmarkTag.observeQuery().subscribe({
-      next: ({ items }) => setRawBookmarkTags(items.map(toBookmarkTag)),
+      next: ({ items }) => setRawBookmarkTags(items.filter((i) => i != null).map(toBookmarkTag)),
     });
     return () => {
       tagSub.unsubscribe();

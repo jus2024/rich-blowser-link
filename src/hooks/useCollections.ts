@@ -114,7 +114,7 @@ export function useCollections(): UseCollectionsReturn {
 
     const sub = client.models.Collection.observeQuery().subscribe({
       next: ({ items }) => {
-        setCollections(sortCollections(items.map(mapCollection)));
+        setCollections(sortCollections(items.filter((i) => i != null).map(mapCollection)));
       },
       error: (err) => {
         console.error("[useCollections] observeQuery failed", err);
@@ -125,7 +125,7 @@ export function useCollections(): UseCollectionsReturn {
     const bcSub = client.models.BookmarkCollection.observeQuery().subscribe({
       next: ({ items }) => {
         setBookmarkCollections(
-          items.map((r) => ({
+          items.filter((r) => r != null).map((r) => ({
             id: r.id,
             bookmarkId: r.bookmarkId,
             collectionId: r.collectionId,

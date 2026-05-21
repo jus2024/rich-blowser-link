@@ -142,6 +142,7 @@ export function useBookmarks(): UseBookmarksReturn {
               return;
             }
             for (const record of listResult.data ?? []) {
+              if (record == null) continue;
               all.push(mapRecordToBookmark(record));
             }
             if (!listResult.nextToken) break;
