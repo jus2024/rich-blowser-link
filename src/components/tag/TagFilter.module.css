@@ -135,3 +135,19 @@
 .deleteTagButton:hover {
   color: #b91c1c;
 }
+
+/* 折りたたみ展開ボタン */
+.expandButton {
+  background: none;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.expandButton:hover {
+  color: var(--color-primary);
+}

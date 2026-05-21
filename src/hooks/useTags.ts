@@ -180,7 +180,10 @@ export function useTags(): UseTagsReturn {
           res.errors?.[0]?.message ?? "Failed to create tag",
         );
       }
-      return toTag(res.data);
+      const newTag = toTag(res.data);
+      // 楽観的更新: ローカルステートに即座に追加
+      setRawTags((prev) => [...prev, newTag]);
+      return newTag;
     },
     [client, rawTags],
   );
@@ -227,6 +230,10 @@ export function useTags(): UseTagsReturn {
           res.errors?.[0]?.message ?? "Failed to delete tag",
         );
       }
+
+      // 楽観的更新: ローカルステートから即座に削除
+      setRawTags((prev) => prev.filter((t) => t.id !== id));
+      setRawBookmarkTags((prev) => prev.filter((bt) => bt.tagId !== id));
     },
     [client],
   );
@@ -259,6 +266,12 @@ export function useTags(): UseTagsReturn {
           res.errors?.[0]?.message ?? "Failed to add tag to bookmark",
         );
       }
+
+      // 楽観的更新: ローカルステートに即座に追加
+      setRawBookmarkTags((prev) => [
+        ...prev,
+        { id: res.data!.id, bookmarkId, tagId, owner: (res.data as { owner?: string | null }).owner ?? "" },
+      ]);
     },
     [client],
   );
@@ -278,6 +291,11 @@ export function useTags(): UseTagsReturn {
         matchingRowIds.map((rowId) =>
           client.models.BookmarkTag.delete({ id: rowId }),
         ),
+      );
+
+      // 楽観的更新: ローカルステートから即座に削除
+      setRawBookmarkTags((prev) =>
+        prev.filter((bt) => !(bt.bookmarkId === bookmarkId && bt.tagId === tagId)),
       );
     },
     [client],
