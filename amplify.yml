@@ -11,6 +11,8 @@ frontend:
     build:
       commands:
         - nvm use 20
+        - env | grep -e BEDROCK_MODEL_ID -e BEDROCK_REGION >> .env.production
+        - env | grep -e NEXT_PUBLIC_ >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
