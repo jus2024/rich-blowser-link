@@ -414,10 +414,12 @@ export default function Home() {
               console.warn(`[AI] Tag "${tagName}" の付与に失敗:`, e);
             }
           }
+          // タグ追加完了後にリフレッシュ
+          await refreshTags();
         })();
       }
     },
-    [collections, updateBookmark, resolveTagId, addTagToBookmark],
+    [collections, updateBookmark, resolveTagId, addTagToBookmark, refreshTags],
   );
 
   // EnrichmentQueue の初期化（tags, collections が変わるたびに再生成）
@@ -899,7 +901,7 @@ export default function Home() {
           isOpen={isMobileChatOpen}
           onClose={() => setIsMobileChatOpen(false)}
         >
-          <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={refreshBookmarks} />
+          <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={() => { refreshBookmarks(); refreshTags(); }} />
         </MobileChatOverlay>
 
         {/* 左サイドバー（デスクトップのみ） */}
@@ -1064,7 +1066,7 @@ export default function Home() {
             collapsed={isChatCollapsed}
             onCollapsedChange={setIsChatCollapsed}
           >
-            <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={refreshBookmarks} />
+            <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={() => { refreshBookmarks(); refreshTags(); }} />
           </ResizableSidebar>
         )}
       </div>
