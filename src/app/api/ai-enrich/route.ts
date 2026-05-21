@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
   const modelId = process.env.BEDROCK_MODEL_ID;
   const region = process.env.BEDROCK_REGION || "us-east-1";
   if (!modelId) {
+    console.warn("[AI API] BEDROCK_MODEL_ID is not set, returning empty result");
     return NextResponse.json(EMPTY_ENRICHMENT);
   }
 
@@ -87,7 +88,14 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // Bedrock 呼び出し失敗時は空 EnrichmentResult を返す（Graceful Degradation）
     console.error("[AI API] Bedrock call failed:", err);
-    return NextResponse.json(EMPTY_ENRICHMENT);
+    return NextResponse.json({
+      ...EMPTY_ENRICHMENT,
+      _debug: {
+        error: err instanceof Error ? err.message : String(err),
+        modelId,
+        region,
+      },
+    });
   }
 }
 
