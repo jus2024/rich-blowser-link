@@ -99,8 +99,7 @@ create_bookmark でブックマークを作成した後は、以下の手順で 
 
 1. **create_bookmark** で新規ブックマークを作成する
 2. **fetch_ogp** で URL の OGP 情報（タイトル、説明、画像 URL）を取得する
-3. OGP 取得が成功した場合、**update_bookmark** で OGP フィールド（title, description）を更新する
-   - ogpImageUrl は update_bookmark の対象外のため、title と description のみ更新する
+3. OGP 取得が成功した場合、**update_bookmark** で OGP フィールド（title, description, ogp_image_url）を更新する
 4. **enrich_bookmark** で AI 補完を実行する（タグ候補、メモ、タイトル補完、説明補完、コレクション提案）
 5. OGP 取得が失敗した場合でも、enrich_bookmark は実行する（URL 情報のみで AI 補完を行う）
 6. AI 補完が失敗した場合は、エラーをユーザーに伝え、OGP 情報のみが適用された状態を維持する

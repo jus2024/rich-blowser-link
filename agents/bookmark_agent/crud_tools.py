@@ -193,6 +193,7 @@ def update_bookmark(
     title: str = "",
     description: str = "",
     status: str = "",
+    ogp_image_url: str = "",
     add_tags: list[str] | None = None,
     remove_tags: list[str] | None = None,
     add_collections: list[str] | None = None,
@@ -207,6 +208,7 @@ def update_bookmark(
         title: タイトル（空文字の場合は更新しない）
         description: 説明（空文字の場合は更新しない）
         status: ステータス（空文字の場合は更新しない）
+        ogp_image_url: OGP 画像 URL（空文字の場合は更新しない）
         add_tags: 追加するタグ名のリスト
         remove_tags: 削除するタグ名のリスト
         add_collections: 追加するコレクション名のリスト
@@ -245,6 +247,7 @@ def update_bookmark(
             "memo": memo,
             "title": title,
             "description": description,
+            "ogpImageUrl": ogp_image_url,
             "#st": status,
         }
 
@@ -252,6 +255,7 @@ def update_bookmark(
             "memo": "memo",
             "title": "title",
             "description": "description",
+            "ogpImageUrl": "ogpImageUrl",
             "#st": "status",
         }
 
@@ -420,6 +424,8 @@ def update_bookmark(
                 updated_fields.append("タイトル")
             if description:
                 updated_fields.append("説明")
+            if ogp_image_url:
+                updated_fields.append("OGP画像")
             if status:
                 updated_fields.append("ステータス")
             if updated_fields:

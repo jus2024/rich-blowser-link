@@ -9,6 +9,8 @@ import MessageInput from "./MessageInput";
 
 interface AgentChatSectionProps {
   runtimeArn: string | undefined;
+  /** エージェントのレスポンス完了時に呼ばれるコールバック */
+  onResponseComplete?: () => void;
 }
 
 /**
@@ -21,8 +23,8 @@ interface AgentChatSectionProps {
  * - 未認証時: チャット機能を無効化 (Req 9.10)
  * - 認証トークンは各リクエストに付与 (Req 9.10, useAgentChat 内で処理)
  */
-export default function AgentChatSection({ runtimeArn }: AgentChatSectionProps) {
-  const { messages, isLoading, error, sendMessage, resetSession } = useAgentChat(runtimeArn);
+export default function AgentChatSection({ runtimeArn, onResponseComplete }: AgentChatSectionProps) {
+  const { messages, isLoading, error, sendMessage, resetSession } = useAgentChat(runtimeArn, { onResponseComplete });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const isRuntimeConfigured = !!runtimeArn?.trim();

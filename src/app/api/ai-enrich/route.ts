@@ -55,10 +55,7 @@ export async function POST(request: NextRequest) {
   const modelId = process.env.BEDROCK_MODEL_ID;
   const region = process.env.BEDROCK_REGION || "us-east-1";
   if (!modelId) {
-    return NextResponse.json({
-      ...EMPTY_ENRICHMENT,
-      _debug: { reason: "BEDROCK_MODEL_ID not set", availableKeys: Object.keys(process.env).filter(k => k.includes("BEDROCK")).join(",") },
-    });
+    return NextResponse.json(EMPTY_ENRICHMENT);
   }
 
   try {
@@ -86,17 +83,11 @@ export async function POST(request: NextRequest) {
     const mapped = mapModelResponseFields(rawResponse);
     const result = parseEnrichmentResponse(mapped);
 
-    return NextResponse.json({
-      ...result,
-      _debug: { reason: "success", modelId, region, rawResponseLength: rawResponse.length },
-    });
+    return NextResponse.json(result);
   } catch (err) {
-    // Bedrock 呼び出し失敗時はエラー情報を含めて返す（デバッグ用）
+    // Bedrock 呼び出し失敗時は空 EnrichmentResult を返す（Graceful Degradation）
     console.error("[AI API] Bedrock call failed:", err);
-    return NextResponse.json({
-      ...EMPTY_ENRICHMENT,
-      _debug: { reason: "bedrock_error", error: err instanceof Error ? err.message : String(err), modelId, region },
-    });
+    return NextResponse.json(EMPTY_ENRICHMENT);
   }
 }
 

@@ -29,6 +29,8 @@ export interface UseTagsReturn {
   deleteTag: (id: string) => Promise<void>;
   addTagToBookmark: (tagId: string, bookmarkId: string) => Promise<void>;
   removeTagFromBookmark: (tagId: string, bookmarkId: string) => Promise<void>;
+  /** Tag と BookmarkTag を手動で再取得する */
+  refresh: () => Promise<void>;
 }
 
 type TagModel = Schema["Tag"]["type"];
@@ -281,6 +283,20 @@ export function useTags(): UseTagsReturn {
     [client],
   );
 
+  const refresh = useCallback(async () => {
+    if (!client) return;
+    // Tag 全件取得
+    const tagRes = await client.models.Tag.list({ limit: 1000 });
+    if (tagRes.data) {
+      setRawTags(tagRes.data.filter((i) => i != null).map(toTag));
+    }
+    // BookmarkTag 全件取得
+    const btRes = await client.models.BookmarkTag.list({ limit: 1000 });
+    if (btRes.data) {
+      setRawBookmarkTags(btRes.data.filter((i) => i != null).map(toBookmarkTag));
+    }
+  }, [client]);
+
   return {
     tags,
     bookmarkTags: rawBookmarkTags,
@@ -291,5 +307,6 @@ export function useTags(): UseTagsReturn {
     deleteTag,
     addTagToBookmark,
     removeTagFromBookmark,
+    refresh,
   };
 }

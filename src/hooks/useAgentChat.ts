@@ -11,13 +11,20 @@ export interface UseAgentChatReturn {
   resetSession: () => void;
 }
 
+export interface UseAgentChatOptions {
+  /** エージェントのレスポンス完了時に呼ばれるコールバック */
+  onResponseComplete?: () => void;
+}
+
 /**
  * AgentCore Runtime との HTTP SSE 通信とメッセージ状態を管理するカスタムフック。
  *
  * @param runtimeArn - AgentCore Runtime の ARN（未設定時は送信不可）
+ * @param options - オプション設定
  */
 export function useAgentChat(
   runtimeArn: string | undefined,
+  options?: UseAgentChatOptions,
 ): UseAgentChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,10 +126,11 @@ export function useAgentChat(
         onComplete: () => {
           setIsLoading(false);
           abortControllerRef.current = null;
+          options?.onResponseComplete?.();
         },
       });
     },
-    [runtimeArn],
+    [runtimeArn, options],
   );
 
   return { messages, isLoading, error, sendMessage, resetSession };

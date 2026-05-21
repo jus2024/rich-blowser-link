@@ -87,7 +87,7 @@ export default function Home() {
 
   const { togglePin } = usePinning({ bookmarks, updateBookmark });
 
-  const { tags, bookmarkTags, addTagToBookmark, removeTagFromBookmark, createTag, deleteTag } = useTags();
+  const { tags, bookmarkTags, addTagToBookmark, removeTagFromBookmark, createTag, deleteTag, refresh: refreshTags } = useTags();
   const {
     collections,
     collectionTree,
@@ -435,6 +435,9 @@ export default function Home() {
       onProgress: setEnrichmentProgress,
       onComplete: () => {
         setTimeout(() => setEnrichmentProgress(null), 3000);
+        // AI 補完完了後にブックマーク・タグ一覧をリフレッシュ
+        refreshBookmarks();
+        refreshTags();
       },
     });
     enrichmentQueueRef.current = queue;
@@ -442,7 +445,7 @@ export default function Home() {
       abortController.abort();
       queue.abort();
     };
-  }, [tags, collections, applyEnrichmentResult]);
+  }, [tags, collections, applyEnrichmentResult, refreshBookmarks, refreshTags]);
 
   /**
    * 新規作成されたブックマークの OGP を API Route 経由でバックグラウンド取得し、DB を更新する。
@@ -896,7 +899,7 @@ export default function Home() {
           isOpen={isMobileChatOpen}
           onClose={() => setIsMobileChatOpen(false)}
         >
-          <AgentChatSection runtimeArn={RUNTIME_ARN} />
+          <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={refreshBookmarks} />
         </MobileChatOverlay>
 
         {/* 左サイドバー（デスクトップのみ） */}
@@ -1061,7 +1064,7 @@ export default function Home() {
             collapsed={isChatCollapsed}
             onCollapsedChange={setIsChatCollapsed}
           >
-            <AgentChatSection runtimeArn={RUNTIME_ARN} />
+            <AgentChatSection runtimeArn={RUNTIME_ARN} onResponseComplete={refreshBookmarks} />
           </ResizableSidebar>
         )}
       </div>
