@@ -297,6 +297,76 @@
   }
 }
 
+/* モバイル: コンパクトカード + アクション非表示 */
+@media (max-width: 768px) {
+  .card {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .cardSortable {
+    grid-template-columns: auto auto 1fr auto;
+  }
+
+  .thumbnail {
+    width: 48px;
+    height: 48px;
+  }
+
+  .title {
+    font-size: 0.9rem;
+  }
+
+  .url {
+    font-size: 0.7rem;
+  }
+
+  .description {
+    font-size: 0.75rem;
+  }
+
+  .memo {
+    font-size: 0.7rem;
+  }
+
+  .tagBadge {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  /* アクションボタンをデフォルト非表示 */
+  .actions {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 5;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    padding: 0.4rem;
+  }
+
+  /* "..." メニューボタン表示 */
+  .mobileMenuToggle {
+    display: flex;
+  }
+
+  /* カードがアクティブ（メニュー展開）時にアクション表示 */
+  .card.mobileActionsVisible .actions {
+    display: flex;
+  }
+
+  /* ピンバッジ位置調整 */
+  .pinBadge {
+    top: 0.25rem;
+    right: 2rem;
+    font-size: 0.75rem;
+  }
+}
+
 /* ドラッグハンドル（リスト並び替えモード時のみ表示） */
 .dragHandle {
   display: flex;
@@ -313,6 +383,26 @@
 
 .dragHandle:active {
   cursor: grabbing;
+}
+
+/* モバイル "..." メニューボタン（デスクトップでは非表示） */
+.mobileMenuToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.4rem;
+  color: var(--color-text-secondary);
+  line-height: 1;
+  align-self: flex-start;
+}
+
+.mobileMenuToggle:hover {
+  background-color: var(--color-bg);
 }
 
 /* ピン留めバッジ */

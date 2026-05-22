@@ -80,9 +80,19 @@ export function BookmarkCard({
   >(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [mobileActionsVisible, setMobileActionsVisible] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
   const tagInputRef = useRef<HTMLInputElement | null>(null);
+
+  /** モバイル判定（タッチデバイスまたは狭いビューポート） */
+  const isMobileDevice = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      "ontouchstart" in window ||
+      window.matchMedia("(max-width: 768px)").matches
+    );
+  }, []);
 
   /** ホバータイマーを解除する（解除のみ。プレビュー状態は変更しない） */
   const clearHoverTimer = useCallback(() => {
@@ -99,7 +109,26 @@ export function BookmarkCard({
     };
   }, [clearHoverTimer]);
 
+  // モバイルアクションメニュー: 外部クリックで閉じる
+  useEffect(() => {
+    if (!mobileActionsVisible) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setMobileActionsVisible(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as EventListener);
+    };
+  }, [mobileActionsVisible]);
+
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
+    // モバイルではプレビューポップアップを無効化
+    if (isMobileDevice()) return;
+
     clearHoverTimer();
     const mouseX = e.clientX;
     const mouseY = e.clientY;
@@ -118,7 +147,7 @@ export function BookmarkCard({
       setShowPreview(true);
       hoverTimerRef.current = null;
     }, PREVIEW_HOVER_DELAY_MS);
-  }, [clearHoverTimer]);
+  }, [clearHoverTimer, isMobileDevice]);
 
   const handleMouseLeave = useCallback(() => {
     clearHoverTimer();
@@ -167,7 +196,7 @@ export function BookmarkCard({
   return (
     <article
       ref={cardRef}
-      className={`${styles.card}${recentlyAccessed ? ` ${styles.recentlyAccessed}` : ""}${dragHandleProps ? ` ${styles.cardSortable}` : ""}`}
+      className={`${styles.card}${recentlyAccessed ? ` ${styles.recentlyAccessed}` : ""}${dragHandleProps ? ` ${styles.cardSortable}` : ""}${mobileActionsVisible ? ` ${styles.mobileActionsVisible}` : ""}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -313,6 +342,16 @@ export function BookmarkCard({
           )}
         </div>
       </div>
+
+      <button
+        type="button"
+        className={styles.mobileMenuToggle}
+        onClick={() => setMobileActionsVisible((v) => !v)}
+        aria-label="アクションメニューを開く"
+        aria-expanded={mobileActionsVisible}
+      >
+        ⋯
+      </button>
 
       <div className={styles.actions}>
         <button
