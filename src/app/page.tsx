@@ -593,7 +593,9 @@ export default function Home() {
     if (!deletingBookmark) return;
     await deleteBookmark(deletingBookmark.id);
     setDeletingBookmark(null);
-  }, [deletingBookmark, deleteBookmark]);
+    // 関連タグのカウントを更新
+    await refreshTags();
+  }, [deletingBookmark, deleteBookmark, refreshTags]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeletingBookmark(null);
@@ -744,7 +746,8 @@ export default function Home() {
       await deleteBookmark(id);
     }
     setSelectedIds(new Set());
-  }, [selectedIds, deleteBookmark]);
+    await refreshTags();
+  }, [selectedIds, deleteBookmark, refreshTags]);
 
   return (
     <DndProvider

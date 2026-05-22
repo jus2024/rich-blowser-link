@@ -326,6 +326,37 @@ export function useBookmarks(): UseBookmarksReturn {
         throw new Error(NOT_CONFIGURED_MESSAGE);
       }
 
+      // 関連する BookmarkTag レコードを削除
+      let btToken: string | undefined = undefined;
+      while (true) {
+        const btRes = await client.models.BookmarkTag.list({
+          filter: { bookmarkId: { eq: id } },
+          limit: 1000,
+          nextToken: btToken,
+        }) as { data: Array<{ id: string }>; nextToken?: string | null };
+        await Promise.all(
+          btRes.data.map((row) => client.models.BookmarkTag.delete({ id: row.id })),
+        );
+        if (!btRes.nextToken) break;
+        btToken = btRes.nextToken;
+      }
+
+      // 関連する BookmarkCollection レコードを削除
+      let bcToken: string | undefined = undefined;
+      while (true) {
+        const bcRes = await client.models.BookmarkCollection.list({
+          filter: { bookmarkId: { eq: id } },
+          limit: 1000,
+          nextToken: bcToken,
+        }) as { data: Array<{ id: string }>; nextToken?: string | null };
+        await Promise.all(
+          bcRes.data.map((row) => client.models.BookmarkCollection.delete({ id: row.id })),
+        );
+        if (!bcRes.nextToken) break;
+        bcToken = bcRes.nextToken;
+      }
+
+      // Bookmark 本体を削除
       const response = await client.models.Bookmark.delete({ id });
       if (response.errors && response.errors.length > 0) {
         throw new Error(formatErrors(response.errors));
