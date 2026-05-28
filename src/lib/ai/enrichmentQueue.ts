@@ -3,9 +3,12 @@
  *
  * React に依存しない純粋な TypeScript モジュール。
  * コンカレンシー制御付きで AI 補完リクエストをキューイングし順次処理する。
+ * getter 関数ベースで最新の tags/collections を取得し、キュー再生成なしに
+ * React 状態変更に耐性を持つ。
  */
 
 import { EnrichmentResult } from "./types";
+import { withRetry, RetryConfig } from "../pipeline/retryHandler";
 
 /** キューに投入するアイテム */
 export interface EnrichmentQueueItem {
@@ -41,9 +44,12 @@ export interface EnrichmentItemResult {
 /** キューのコンフィグ */
 export interface EnrichmentQueueConfig {
   concurrency: number;
-  existingTags: string[];
-  existingCollections: string[];
+  /** 処理時点の最新タグ一覧を返す getter 関数 */
+  getExistingTags: () => string[];
+  /** 処理時点の最新コレクション一覧を返す getter 関数 */
+  getExistingCollections: () => string[];
   signal?: AbortSignal;
+  retryConfig?: RetryConfig;
   onItemComplete: (result: EnrichmentItemResult) => void;
   onProgress: (progress: EnrichmentQueueProgress) => void;
   onComplete: (result: EnrichmentQueueResult) => void;
@@ -133,31 +139,61 @@ export class EnrichmentQueue {
         return;
       }
 
-      const response = await fetch("/api/ai-enrich", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: item.url,
-          ogpTitle: item.ogpTitle,
-          ogpDescription: item.ogpDescription,
-          existingTags: this.config.existingTags,
-          existingCollections: this.config.existingCollections,
-        }),
-        signal: this.config.signal,
-      });
+      // 処理時点の最新値を getter 関数から取得
+      const existingTags = this.config.getExistingTags();
+      const existingCollections = this.config.getExistingCollections();
 
-      // AbortSignal チェック（fetch 後）
-      if (this.aborted || this.config.signal?.aborted) {
-        this.inFlight--;
-        this.checkCompletion();
-        return;
+      const fetchFn = async () => {
+        const response = await fetch("/api/ai-enrich", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: item.url,
+            ogpTitle: item.ogpTitle,
+            ogpDescription: item.ogpDescription,
+            existingTags,
+            existingCollections,
+          }),
+          signal: this.config.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`AI enrich API returned ${response.status}`);
+        }
+
+        return response.json() as Promise<EnrichmentResult>;
+      };
+
+      let result: EnrichmentResult;
+
+      if (this.config.retryConfig) {
+        const retryResult = await withRetry(fetchFn, {
+          ...this.config.retryConfig,
+          signal: this.config.signal,
+        });
+
+        // AbortSignal チェック（リトライ後）
+        if (this.aborted || this.config.signal?.aborted) {
+          this.inFlight--;
+          this.checkCompletion();
+          return;
+        }
+
+        if (!retryResult.success) {
+          throw retryResult.error || new Error("Retry exhausted");
+        }
+
+        result = retryResult.data!;
+      } else {
+        result = await fetchFn();
+
+        // AbortSignal チェック（fetch 後）
+        if (this.aborted || this.config.signal?.aborted) {
+          this.inFlight--;
+          this.checkCompletion();
+          return;
+        }
       }
-
-      if (!response.ok) {
-        throw new Error(`AI enrich API returned ${response.status}`);
-      }
-
-      const result: EnrichmentResult = await response.json();
 
       this.completed++;
       this.inFlight--;

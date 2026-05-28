@@ -17,6 +17,8 @@ import { filterBookmarksByCollectionId } from "@/src/lib/collectionUtils";
 import { filterBookmarksByTags } from "@/src/lib/tagUtils";
 import { EnrichmentQueue } from "@/src/lib/ai/enrichmentQueue";
 import type { EnrichmentQueueProgress, EnrichmentItemResult } from "@/src/lib/ai/enrichmentQueue";
+import { OGPFetchQueue } from "@/src/lib/pipeline/ogpFetchQueue";
+import type { OGPFetchResult } from "@/src/lib/pipeline/ogpFetchQueue";
 import type { ImportCollectionMode } from "@/src/lib/ai/types";
 import type { BookmarkWithTags } from "@/src/lib/search";
 import type {
@@ -43,7 +45,8 @@ import { CollectionAssignDialog } from "@/src/components/collection/CollectionAs
 import { DndProvider } from "@/src/components/dnd/DndProvider";
 import { useDragAndDrop } from "@/src/hooks/useDragAndDrop";
 import { ImportDialog } from "@/src/components/import/ImportDialog";
-import { EnrichmentProgressBar } from "@/src/components/ai/EnrichmentProgressBar";
+import { PipelineProgress } from "@/src/components/ai/PipelineProgress";
+import type { OGPFetchQueueProgress } from "@/src/components/ai/PipelineProgress";
 import { SearchBar } from "@/src/components/search/SearchBar";
 import { StatusFilter } from "@/src/components/filter/StatusFilter";
 import { TagFilter } from "@/src/components/tag/TagFilter";
@@ -359,18 +362,23 @@ export default function Home() {
     [resolveTagId, addTagToBookmark],
   );
 
-  // --- OGP バックグラウンド取得用の AbortController ---
-  const ogpAbortRef = useRef<AbortController | null>(null);
+  // --- パイプライン: ref ベースのキューライフサイクル ---
+  // Single AbortController for the entire pipeline session
+  const pipelineAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    return () => {
-      ogpAbortRef.current?.abort();
-    };
-  }, []);
+  // Stable queue refs (never recreated)
+  const ogpQueueRef = useRef<OGPFetchQueue | null>(null);
+  const enrichmentQueueRef = useRef<EnrichmentQueue | null>(null);
+
+  // Fresh state refs for getter functions
+  const tagsRef = useRef(tags);
+  const collectionsRef = useRef(collections);
+  useEffect(() => { tagsRef.current = tags; }, [tags]);
+  useEffect(() => { collectionsRef.current = collections; }, [collections]);
 
   // --- AI 補完キュー ---
-  const enrichmentQueueRef = useRef<EnrichmentQueue | null>(null);
   const [enrichmentProgress, setEnrichmentProgress] = useState<EnrichmentQueueProgress | null>(null);
+  const [ogpProgress, setOGPProgress] = useState<OGPFetchQueueProgress | null>(null);
 
   /**
    * AI 補完結果を Bookmark に適用する。
@@ -422,36 +430,111 @@ export default function Home() {
     [collections, updateBookmark, resolveTagId, addTagToBookmark, refreshTags],
   );
 
-  // EnrichmentQueue の初期化（tags, collections が変わるたびに再生成）
+  // applyEnrichmentResult ref to avoid stale closures
+  const applyEnrichmentResultRef = useRef(applyEnrichmentResult);
+  useEffect(() => { applyEnrichmentResultRef.current = applyEnrichmentResult; }, [applyEnrichmentResult]);
+
+  // isAIEnabled ref to avoid stale closures in queue callbacks
+  const isAIEnabledRef = useRef(isAIEnabled);
+  useEffect(() => { isAIEnabledRef.current = isAIEnabled; }, [isAIEnabled]);
+
+  // updateBookmark ref to avoid stale closures in queue callbacks
+  const updateBookmarkRef = useRef(updateBookmark);
+  useEffect(() => { updateBookmarkRef.current = updateBookmark; }, [updateBookmark]);
+
+  /**
+   * OGP フェッチ完了時のコールバック。
+   * OGP 成功時にブックマーク更新 + AI 補完キューへのエンキューを行う。
+   * Validates: Requirements 2.3, 5.1
+   */
+  const handleOGPItemComplete = useCallback((result: OGPFetchResult) => {
+    if (!result.success) return;
+
+    // Update bookmark with OGP data
+    const updates: Record<string, string> = {};
+    if (result.title) updates.title = result.title;
+    if (result.description) updates.description = result.description;
+    if (result.imageUrl) updates.ogpImageUrl = result.imageUrl;
+    if (Object.keys(updates).length > 0) {
+      updateBookmarkRef.current(result.bookmarkId, updates);
+    }
+
+    // Enqueue to AI enrichment (if enabled)
+    if (isAIEnabledRef.current) {
+      enrichmentQueueRef.current?.enqueue({
+        bookmarkId: result.bookmarkId,
+        url: result.url,
+        ogpTitle: result.title || "",
+        ogpDescription: result.description || "",
+        hasCollectionId: result.hasCollectionId,
+      });
+    }
+  }, []);
+
+  /**
+   * OGP フェッチ全件完了時のコールバック。
+   */
+  const handleOGPComplete = useCallback((result: { totalProcessed: number; failedCount: number }) => {
+    console.log("[OGP] 全件完了: %d 件処理, %d 件失敗", result.totalProcessed, result.failedCount);
+  }, []);
+
+  /**
+   * AI 補完全件完了時のコールバック。
+   * 完了後 3 秒で進捗表示をクリアし、ブックマーク・タグ一覧をリフレッシュする。
+   */
+  const handleEnrichmentComplete = useCallback(() => {
+    setTimeout(() => setEnrichmentProgress(null), 3000);
+    // AI 補完完了後にブックマーク・タグ一覧をリフレッシュ
+    refreshBookmarks();
+    refreshTags();
+  }, [refreshBookmarks, refreshTags]);
+
+  // Initialize queues once (lazy initialization via callback, not in a dependency-heavy useEffect)
+  const getOrCreatePipeline = useCallback(() => {
+    if (!pipelineAbortRef.current) {
+      pipelineAbortRef.current = new AbortController();
+    }
+    if (!enrichmentQueueRef.current) {
+      enrichmentQueueRef.current = new EnrichmentQueue({
+        concurrency: 3,
+        getExistingTags: () => tagsRef.current.map((t) => t.name),
+        getExistingCollections: () => collectionsRef.current.map((c) => c.name),
+        signal: pipelineAbortRef.current.signal,
+        retryConfig: { maxRetries: 2, baseDelayMs: 1000 },
+        onItemComplete: (result) => {
+          if (!result.enrichmentResult) return;
+          applyEnrichmentResultRef.current(result);
+        },
+        onProgress: setEnrichmentProgress,
+        onComplete: handleEnrichmentComplete,
+      });
+    }
+    if (!ogpQueueRef.current) {
+      ogpQueueRef.current = new OGPFetchQueue({
+        concurrency: 5,
+        signal: pipelineAbortRef.current.signal,
+        retryConfig: { maxRetries: 2, baseDelayMs: 1000 },
+        onItemComplete: handleOGPItemComplete,
+        onProgress: setOGPProgress,
+        onComplete: handleOGPComplete,
+      });
+    }
+    return { ogpQueue: ogpQueueRef.current, enrichmentQueue: enrichmentQueueRef.current };
+  }, [handleOGPItemComplete, handleOGPComplete, handleEnrichmentComplete]);
+
+  // Cleanup on unmount only
   useEffect(() => {
-    const abortController = new AbortController();
-    const queue = new EnrichmentQueue({
-      concurrency: 3,
-      existingTags: tags.map((t) => t.name),
-      existingCollections: collections.map((c) => c.name),
-      signal: abortController.signal,
-      onItemComplete: (result) => {
-        if (!result.enrichmentResult) return;
-        applyEnrichmentResult(result);
-      },
-      onProgress: setEnrichmentProgress,
-      onComplete: () => {
-        setTimeout(() => setEnrichmentProgress(null), 3000);
-        // AI 補完完了後にブックマーク・タグ一覧をリフレッシュ
-        refreshBookmarks();
-        refreshTags();
-      },
-    });
-    enrichmentQueueRef.current = queue;
     return () => {
-      abortController.abort();
-      queue.abort();
+      pipelineAbortRef.current?.abort();
+      ogpQueueRef.current?.abort();
+      enrichmentQueueRef.current?.abort();
     };
-  }, [tags, collections, applyEnrichmentResult, refreshBookmarks, refreshTags]);
+  }, []);
 
   /**
    * 新規作成されたブックマークの OGP を API Route 経由でバックグラウンド取得し、DB を更新する。
    * OGP 取得成功後に AI 補完キューに enqueue する。
+   * OGPFetchQueue を使用し、コンカレンシー制御・リトライ・安定した AbortController を実現。
    * @param items - OGP 取得対象のブックマーク配列
    * @param options.hasCollectionId - enqueue 時に hasCollectionId として渡す値（デフォルト false）
    */
@@ -461,51 +544,17 @@ export default function Home() {
       const hasCollectionId = options?.hasCollectionId ?? false;
       console.log("[OGP] triggerOGPFetch: %d 件の OGP 取得開始 (hasCollectionId=%s)", items.length, hasCollectionId);
 
-      // 前回のリクエストをキャンセル
-      ogpAbortRef.current?.abort();
-      const controller = new AbortController();
-      ogpAbortRef.current = controller;
-
-      for (const { id: bookmarkId, url } of items) {
-        if (controller.signal.aborted) break;
-        if (!url) continue;
-
-        fetch("/api/ogp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-          signal: controller.signal,
-        })
-          .then((res) => res.json())
-          .then((ogp: { title: string; description: string; imageUrl: string }) => {
-            if (controller.signal.aborted) return;
-            const updates: Record<string, string> = {};
-            if (ogp.title) updates.title = ogp.title;
-            if (ogp.description) updates.description = ogp.description;
-            if (ogp.imageUrl) updates.ogpImageUrl = ogp.imageUrl;
-            if (Object.keys(updates).length > 0) {
-              console.log("[OGP] 更新: %s → %o", bookmarkId.slice(0, 8), updates);
-              updateBookmark(bookmarkId, updates);
-            }
-            // OGP 取得成功後に AI 補完キューに enqueue（AI トグルが ON の場合のみ）
-            if (isAIEnabled) {
-              enrichmentQueueRef.current?.enqueue({
-                bookmarkId,
-                url,
-                ogpTitle: ogp.title || "",
-                ogpDescription: ogp.description || "",
-                hasCollectionId,
-              });
-            }
-          })
-          .catch((err) => {
-            if (err.name !== "AbortError") {
-              console.warn("[OGP] 取得失敗: %s", url, err);
-            }
-          });
-      }
+      const { ogpQueue } = getOrCreatePipeline();
+      const batch = items
+        .filter((item) => !!item.url)
+        .map((item) => ({
+          bookmarkId: item.id,
+          url: item.url,
+          hasCollectionId,
+        }));
+      ogpQueue.enqueueBatch(batch);
     },
-    [updateBookmark, isAIEnabled],
+    [getOrCreatePipeline],
   );
 
   // --- Bookmark 作成/編集 ---
@@ -973,7 +1022,7 @@ export default function Home() {
             onSortChange={setSortKey}
           />
 
-          <EnrichmentProgressBar progress={enrichmentProgress} />
+          <PipelineProgress ogpProgress={ogpProgress} enrichmentProgress={enrichmentProgress} />
 
           {/* 一括選択バー */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.25rem 0" }}>
