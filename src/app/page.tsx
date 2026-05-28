@@ -403,6 +403,13 @@ export default function Home() {
         );
         if (matchedCollection) {
           updates.collectionId = matchedCollection.id;
+        } else {
+          console.warn(
+            "[AI] suggestedCollection が既存コレクションに一致しません:",
+            JSON.stringify(enrichmentResult.suggestedCollection),
+            "既存:",
+            collections.map((c) => c.name),
+          );
         }
       }
 

@@ -13,7 +13,7 @@ export interface EnrichmentRequest {
 
 /** AI 補完 API のレスポンス */
 export interface EnrichmentResult {
-  suggestedTags: string[];      // 最大3個、各最大30文字
+  suggestedTags: string[];      // 最大1個、各最大30文字
   suggestedMemo: string;        // 最大300文字
   suggestedTitle: string;       // 最大200文字（OGPタイトルが空の場合のみ生成）
   suggestedDescription: string; // 最大500文字（OGP説明が空の場合のみ生成）
@@ -38,7 +38,7 @@ export interface BedrockClientConfig {
 
 // --- フィールド制約の定数 ---
 
-export const MAX_TAGS = 3;
+export const MAX_TAGS = 1;
 export const MAX_TAG_LENGTH = 30;
 export const MAX_MEMO_LENGTH = 300;
 export const MAX_TITLE_LENGTH = 200;
