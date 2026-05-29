@@ -5,10 +5,10 @@ AI 補完付きブックマーク管理 Web アプリケーション。AWS Ampli
 ## 主な機能
 
 - **ブックマーク管理** — URL 登録、OGP メタデータ自動取得、タグ・Collection による整理
-- **AI Bookmark Enrichment** — Amazon Bedrock による自動タグ付け、メモ生成、タイトル・説明補完
-- **バッチ AI 補完** — インポート時の大量ブックマークに対するキュー方式の全件 AI 補完
+- **AI Bookmark Enrichment** — Amazon Bedrock による自動タグ付け（1個）、メモ生成、タイトル・説明補完、Collection 自動振り分け
+- **バッチ AI 補完** — インポート時の大量ブックマークに対するキュー方式の全件 AI 補完（OGP → AI 補完の2段パイプライン）
 - **ブックマークインポート** — ブラウザエクスポートファイル（HTML）からの一括取り込み、フォルダ構成引き継ぎ or フラットインポート選択
-- **Collection & Tag** — 階層 Collection、タグフィルタ、ドラッグ&ドロップ整理
+- **Collection & Tag** — 階層 Collection、タグフィルタ、ドラッグ&ドロップ整理、未使用タグ一括削除
 - **AI エージェントチャット**（任意）— AgentCore Runtime 上の Strands Agent とリアルタイム対話
 - **レスポンシブ対応** — デスクトップ3カラム、モバイルはオーバーレイ展開
 
@@ -34,7 +34,7 @@ src/
     api/ai-enrich/        # AI 補完 API（Bedrock 呼び出し）
   components/
     agent/                # エージェントチャット UI
-    ai/                   # AI 補完進捗バー
+    ai/                   # PipelineProgress（OGP + AI 補完統合進捗表示）
     bookmark/             # ブックマーク CRUD コンポーネント
     collection/           # Collection 管理コンポーネント
     import/               # インポートダイアログ
@@ -46,6 +46,7 @@ src/
   hooks/                  # カスタムフック
   lib/
     ai/                   # EnrichmentQueue、AI 関連ユーティリティ
+    pipeline/             # OGPFetchQueue、RetryHandler（パイプライン基盤）
     agent/                # AgentCore Runtime 通信
     amplify/              # Amplify 設定・プロバイダー
     import/               # インポートパーサー
