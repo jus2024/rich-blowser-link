@@ -144,6 +144,30 @@ export function useCollections(): UseCollectionsReturn {
     };
   }, [client]);
 
+  // 孤立コレクション（parentId が存在しない ID を指している）の自動修復
+  // 初回ロード後に一度だけ実行する
+  const orphanFixedRef = useRef(false);
+  useEffect(() => {
+    if (!client || collections.length === 0 || orphanFixedRef.current) return;
+    orphanFixedRef.current = true;
+
+    const ids = new Set(collections.map((c) => c.id));
+    const orphans = collections.filter(
+      (c) => c.parentId !== null && !ids.has(c.parentId),
+    );
+
+    if (orphans.length === 0) return;
+
+    console.log("[useCollections] 孤立コレクションを修復:", orphans.map((c) => c.name));
+    Promise.all(
+      orphans.map((c) =>
+        client.models.Collection.update({ id: c.id, parentId: null }),
+      ),
+    ).catch((err) => {
+      console.error("[useCollections] 孤立修復に失敗:", err);
+    });
+  }, [client, collections]);
+
   const createCollection = useCallback(
     async (input: CollectionInput): Promise<Collection> => {
       if (!client) {
@@ -323,6 +347,22 @@ export function useCollections(): UseCollectionsReturn {
     async (id: string): Promise<void> => {
       if (!client) {
         return;
+      }
+
+      // 子コレクションの parentId を null に更新する（孤立防止）
+      const childCollections = collectionsRef.current.filter(
+        (c) => c.parentId === id,
+      );
+      if (childCollections.length > 0) {
+        const childUpdates = await Promise.all(
+          childCollections.map((child) =>
+            client.models.Collection.update({ id: child.id, parentId: null }),
+          ),
+        );
+        const childErrors = childUpdates.flatMap((r) => r.errors ?? []);
+        if (childErrors.length > 0) {
+          throw new Error(childErrors.map((e) => e.message).join(", "));
+        }
       }
 
       // Collection に属する BookmarkCollection を先に削除する
