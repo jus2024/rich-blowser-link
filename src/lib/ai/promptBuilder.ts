@@ -26,7 +26,7 @@ export function buildEnrichmentPrompt(context: PromptContext): string {
     : "";
 
   const existingCollectionsSection = existingCollections && existingCollections.length > 0
-    ? `\n## 既存コレクション一覧\n\n以下はユーザーが既に作成済みのコレクション（フォルダ）です。このページが属すべきコレクションを**この中から1つだけ選んでください**。どれにも該当しない場合は空文字 "" を返してください。\n\n${existingCollections.join(", ")}\n`
+    ? `\n## 既存コレクション一覧\n\n以下はユーザーが既に作成済みのコレクション（フォルダ）です。このページが属すべきコレクションを**この中から1つ必ず選んでください**。完全に一致しなくても、最も関連性の高いものを選んでください。\n\n${existingCollections.join(", ")}\n`
     : "";
 
   return `あなたはブックマーク整理アシスタントです。以下のWebページ情報を分析し、メタデータを生成してください。
@@ -49,7 +49,7 @@ ${existingTagsSection}${existingCollectionsSection}
 
 4. **description**: ${descriptionInstruction}
 
-5. **collection**: 既存コレクション一覧から、このページが最も適切に属するコレクション名を1つ選んでください。どれにも該当しない場合は空文字 "" を返してください。新しいコレクション名を作成しないでください。
+5. **collection**: 既存コレクション一覧から、このページが最も関連するコレクション名を1つ必ず選んでください。完全に一致するものがなくても、最も近いものを選んでください。新しいコレクション名を作成しないでください。
 
 ## 言語
 

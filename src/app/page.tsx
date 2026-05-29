@@ -468,6 +468,7 @@ export default function Home() {
 
     // Enqueue to AI enrichment (if enabled)
     if (isAIEnabledRef.current) {
+      console.log("[AI] OGP完了 → AI enrichment enqueue:", result.bookmarkId, "enrichmentQueue exists:", !!enrichmentQueueRef.current);
       enrichmentQueueRef.current?.enqueue({
         bookmarkId: result.bookmarkId,
         url: result.url,
@@ -475,6 +476,8 @@ export default function Home() {
         ogpDescription: result.description || "",
         hasCollectionId: result.hasCollectionId,
       });
+    } else {
+      console.log("[AI] AI enrichment disabled, skipping:", result.bookmarkId);
     }
   }, []);
 
