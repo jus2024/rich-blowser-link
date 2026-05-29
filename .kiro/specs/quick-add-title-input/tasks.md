@@ -6,8 +6,8 @@ QuickAdd コンポーネントにタイトル入力欄を追加し、ユーザ�
 
 ## Tasks
 
-- [ ] 1. QuickAdd コンポーネントの更新
-  - [ ] 1.1 QuickAddProps の onAdd シグネチャを変更し、タイトル入力欄を追加する
+- [x] 1. QuickAdd コンポーネントの更新
+  - [x] 1.1 QuickAddProps の onAdd シグネチャを変更し、タイトル入力欄を追加する
     - `onAdd` の型を `(url: string, title?: string) => Promise<void>` に変更
     - `title` state を追加し、タイトル入力フィールドを URL 入力の下に配置
     - `maxLength={200}`, `placeholder="タイトル（任意）"`, `disabled={isAdding}` を設定
@@ -15,7 +15,7 @@ QuickAdd コンポーネントにタイトル入力欄を追加し、ユーザ�
     - 送信成功時に URL とタイトルの両方をクリアする
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 1.2 QuickAdd.module.css にタイトル入力欄のスタイルを追加する
+  - [x] 1.2 QuickAdd.module.css にタイトル入力欄のスタイルを追加する
     - `.titleInput` クラスを追加（URL 入力と同様のスタイル、幅は全幅）
     - コンテナのレイアウトを調整してタイトル入力欄を収容する
     - _Requirements: 1.1_
@@ -34,20 +34,20 @@ QuickAdd コンポーネントにタイトル入力欄を追加し、ユーザ�
     - **Property 6: Title max length enforcement**
     - **Validates: Requirements 1.4, 2.1, 2.2, 2.3, 6.4**
 
-- [ ] 2. page.tsx のパイプライン更新
-  - [ ] 2.1 handleQuickAdd を更新してタイトルを createBookmark に渡す
+- [x] 2. page.tsx のパイプライン更新
+  - [x] 2.1 handleQuickAdd を更新してタイトルを createBookmark に渡す
     - `handleQuickAdd` のシグネチャを `(url: string, title?: string)` に変更
     - `title` が存在する場合は `BookmarkInput` に `title` を含めて `createBookmark` に渡す
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 2.2 bookmarksRef を追加し、handleOGPItemComplete にタイトル優先制御を実装する
+  - [x] 2.2 bookmarksRef を追加し、handleOGPItemComplete にタイトル優先制御を実装する
     - `bookmarksRef` を追加: `const bookmarksRef = useRef(bookmarks)` + `useEffect` で同期
     - `handleOGPItemComplete` 内で `bookmarksRef.current.find(b => b.id === result.bookmarkId)` を参照
     - 現在の bookmark の title が空でない場合は OGP title での上書きをスキップ
     - description, ogpImageUrl は従来通り適用する
     - _Requirements: 3.1, 3.2, 3.3, 5.1, 5.2_
 
-  - [ ] 2.3 applyEnrichmentResult にタイトル優先制御を実装する
+  - [x] 2.3 applyEnrichmentResult にタイトル優先制御を実装する
     - `bookmarks.find(b => b.id === bookmarkId)` で現在の bookmark を参照
     - 現在の bookmark の title が空でない場合は `suggestedTitle` の適用をスキップ
     - description, memo, collection, tags は従来通り適用する
@@ -59,7 +59,7 @@ QuickAdd コンポーネントにタイトル入力欄を追加し、ユーザ�
     - **Property 3: Non-title metadata always applied**
     - **Validates: Requirements 3.1, 3.2, 3.3, 4.1, 4.2, 4.3**
 
-- [ ] 3. Checkpoint - 型チェックとテスト確認
+- [x] 3. Checkpoint - 型チェックとテスト確認
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

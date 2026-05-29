@@ -379,8 +379,10 @@ export default function Home() {
   // Fresh state refs for getter functions
   const tagsRef = useRef(tags);
   const collectionsRef = useRef(collections);
+  const bookmarksRef = useRef(bookmarks);
   useEffect(() => { tagsRef.current = tags; }, [tags]);
   useEffect(() => { collectionsRef.current = collections; }, [collections]);
+  useEffect(() => { bookmarksRef.current = bookmarks; }, [bookmarks]);
 
   // --- AI 補完キュー ---
   const [enrichmentProgress, setEnrichmentProgress] = useState<EnrichmentQueueProgress | null>(null);
@@ -398,7 +400,11 @@ export default function Home() {
       if (!enrichmentResult) return;
 
       const updates: Record<string, string> = {};
-      if (enrichmentResult.suggestedTitle) updates.title = enrichmentResult.suggestedTitle;
+      // タイトル優先制御: 現在の bookmark にタイトルが設定されていない場合のみ suggestedTitle を適用
+      const currentBookmark = bookmarks.find(b => b.id === bookmarkId);
+      if (enrichmentResult.suggestedTitle && !currentBookmark?.title) {
+        updates.title = enrichmentResult.suggestedTitle;
+      }
       if (enrichmentResult.suggestedDescription) updates.description = enrichmentResult.suggestedDescription;
       if (enrichmentResult.suggestedMemo) updates.memo = enrichmentResult.suggestedMemo;
 
@@ -440,7 +446,7 @@ export default function Home() {
         })();
       }
     },
-    [collections, updateBookmark, resolveTagId, addTagToBookmark, refreshTags],
+    [bookmarks, collections, updateBookmark, resolveTagId, addTagToBookmark, refreshTags],
   );
 
   // applyEnrichmentResult ref to avoid stale closures
@@ -458,14 +464,19 @@ export default function Home() {
   /**
    * OGP フェッチ完了時のコールバック。
    * OGP 成功時にブックマーク更新 + AI 補完キューへのエンキューを行う。
-   * Validates: Requirements 2.3, 5.1
+   * タイトル優先制御: ユーザーが設定したタイトルがある場合は OGP タイトルで上書きしない。
+   * Validates: Requirements 2.3, 3.1, 3.2, 3.3, 5.1, 5.2
    */
   const handleOGPItemComplete = useCallback((result: OGPFetchResult) => {
     if (!result.success) return;
 
     // Update bookmark with OGP data
     const updates: Record<string, string> = {};
-    if (result.title) updates.title = result.title;
+    // タイトル優先制御: 現在の bookmark にタイトルが設定されていない場合のみ OGP タイトルを適用
+    const currentBookmark = bookmarksRef.current.find(b => b.id === result.bookmarkId);
+    if (result.title && !currentBookmark?.title) {
+      updates.title = result.title;
+    }
     if (result.description) updates.description = result.description;
     if (result.imageUrl) updates.ogpImageUrl = result.imageUrl;
     if (Object.keys(updates).length > 0) {
@@ -575,8 +586,10 @@ export default function Home() {
 
   // --- Bookmark 作成/編集 ---
   const handleQuickAdd = useCallback(
-    async (url: string) => {
-      const created = await createBookmark({ url });
+    async (url: string, title?: string) => {
+      const input: BookmarkInput = { url };
+      if (title) input.title = title;
+      const created = await createBookmark(input);
       // バックグラウンドでOGP（タイトル・画像）を取得して更新
       triggerOGPFetch([{ id: created.id, url: created.url }]);
     },

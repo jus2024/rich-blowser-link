@@ -4,8 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import styles from "./QuickAdd.module.css";
 
 export interface QuickAddProps {
-  /** URL を受け取ってブックマークを作成するハンドラ */
-  onAdd: (url: string) => Promise<void>;
+  /** URL とオプションのタイトルを受け取ってブックマークを作成するハンドラ */
+  onAdd: (url: string, title?: string) => Promise<void>;
   /** 重複チェック（既に登録済みの場合は Bookmark を返す） */
   checkDuplicate?: (url: string) => Promise<unknown>;
 }
@@ -15,6 +15,7 @@ export interface QuickAddProps {
  */
 export function QuickAdd({ onAdd, checkDuplicate }: QuickAddProps) {
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,8 +58,10 @@ export function QuickAdd({ onAdd, checkDuplicate }: QuickAddProps) {
         }
       }
 
-      await onAdd(finalUrl);
+      const trimmedTitle = title.trim();
+      await onAdd(finalUrl, trimmedTitle || undefined);
       setUrl("");
+      setTitle("");
       showMessage("success", "登録しました");
       inputRef.current?.focus();
     } catch (err) {
@@ -66,7 +69,7 @@ export function QuickAdd({ onAdd, checkDuplicate }: QuickAddProps) {
     } finally {
       setIsAdding(false);
     }
-  }, [url, isAdding, onAdd, checkDuplicate, showMessage]);
+  }, [url, title, isAdding, onAdd, checkDuplicate, showMessage]);
 
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
@@ -79,6 +82,16 @@ export function QuickAdd({ onAdd, checkDuplicate }: QuickAddProps) {
         placeholder="URLを貼り付けてEnterで登録..."
         disabled={isAdding}
         aria-label="クイックブックマーク登録"
+      />
+      <input
+        type="text"
+        className={styles.titleInput}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="タイトル（任意）"
+        maxLength={200}
+        disabled={isAdding}
+        aria-label="ブックマークタイトル"
       />
       <button
         type="submit"
