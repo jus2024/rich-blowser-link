@@ -320,6 +320,20 @@ export function useCollections(): UseCollectionsReturn {
         throw new Error("自分自身を親にすることはできません");
       }
 
+      // 自分の子孫への移動は不可（循環参照防止）
+      if (newParentId !== null) {
+        let current = collectionsById.get(newParentId);
+        const visited = new Set<string>();
+        while (current) {
+          if (current.id === id) {
+            throw new Error("自分の子孫を親にすることはできません");
+          }
+          if (visited.has(current.id)) break; // 循環参照ガード
+          visited.add(current.id);
+          current = current.parentId ? collectionsById.get(current.parentId) : undefined;
+        }
+      }
+
       // 深さバリデーション
       if (newParentId !== null) {
         const parentDepth = getCollectionDepth(newParentId, collectionsById);

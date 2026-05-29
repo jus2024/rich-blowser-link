@@ -13,7 +13,8 @@ export function buildCollectionTree(collections: Collection[]): CollectionNode[]
   const childrenMap = new Map<string | null, Collection[]>();
 
   for (const c of collections) {
-    const parentKey = c.parentId ?? null;
+    // parentId が存在しない ID を指している場合はルートにフォールバック
+    const parentKey = (c.parentId && byId.has(c.parentId)) ? c.parentId : null;
     if (!childrenMap.has(parentKey)) childrenMap.set(parentKey, []);
     childrenMap.get(parentKey)!.push(c);
   }
