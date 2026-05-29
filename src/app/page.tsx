@@ -90,7 +90,7 @@ export default function Home() {
 
   const { togglePin } = usePinning({ bookmarks, updateBookmark });
 
-  const { tags, bookmarkTags, addTagToBookmark, removeTagFromBookmark, createTag, deleteTag, refresh: refreshTags } = useTags();
+  const { tags, bookmarkTags, addTagToBookmark, removeTagFromBookmark, createTag, deleteTag, deleteUnusedTags, refresh: refreshTags } = useTags();
   const {
     collections,
     collectionTree,
@@ -219,6 +219,12 @@ export default function Home() {
   // bookmarkId → Tag名[] のマップを BookmarkTag 中間テーブルから構築する
   const tagById = useMemo(
     () => new Map(tags.map((t) => [t.id, t.name])),
+    [tags],
+  );
+
+  // --- 未使用タグ数（一括削除ボタン用）---
+  const unusedTagCount = useMemo(
+    () => tags.filter((t) => t.bookmarkCount === 0).length,
     [tags],
   );
 
@@ -950,6 +956,8 @@ export default function Home() {
             onToggleTag={handleToggleTag}
             onClear={handleClearTags}
             onDeleteTag={deleteTag}
+            onDeleteUnusedTags={deleteUnusedTags}
+            unusedTagCount={unusedTagCount}
           />
           <StatusFilter
             selectedStatus={selectedStatus}
@@ -1003,6 +1011,8 @@ export default function Home() {
               onToggleTag={handleToggleTag}
               onClear={handleClearTags}
               onDeleteTag={deleteTag}
+              onDeleteUnusedTags={deleteUnusedTags}
+              unusedTagCount={unusedTagCount}
             />
             <StatusFilter
               selectedStatus={selectedStatus}

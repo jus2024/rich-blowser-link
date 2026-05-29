@@ -27,6 +27,8 @@ export interface UseTagsReturn {
   createTag: (name: string) => Promise<Tag>;
   renameTag: (id: string, newName: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+  /** 未使用タグ（bookmarkCount === 0）を一括削除する */
+  deleteUnusedTags: () => Promise<void>;
   addTagToBookmark: (tagId: string, bookmarkId: string) => Promise<void>;
   removeTagFromBookmark: (tagId: string, bookmarkId: string) => Promise<void>;
   /** Tag と BookmarkTag を手動で再取得する */
@@ -238,6 +240,16 @@ export function useTags(): UseTagsReturn {
     [client],
   );
 
+  const deleteUnusedTags = useCallback(async (): Promise<void> => {
+    if (!client) {
+      throw new Error(NOT_CONFIGURED_MESSAGE);
+    }
+    const unusedTags = tags.filter((t) => t.bookmarkCount === 0);
+    for (const tag of unusedTags) {
+      await deleteTag(tag.id);
+    }
+  }, [client, tags, deleteTag]);
+
   const addTagToBookmark = useCallback(
     async (tagId: string, bookmarkId: string): Promise<void> => {
       if (!client) {
@@ -323,6 +335,7 @@ export function useTags(): UseTagsReturn {
     createTag,
     renameTag,
     deleteTag,
+    deleteUnusedTags,
     addTagToBookmark,
     removeTagFromBookmark,
     refresh,

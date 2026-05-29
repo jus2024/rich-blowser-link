@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { TagWithCount } from "@/src/types";
 import styles from "./TagFilter.module.css";
 
@@ -11,6 +11,10 @@ export interface TagFilterProps {
   onClear?: () => void;
   /** タグを削除するハンドラ（0件タグの削除用） */
   onDeleteTag?: (tagId: string) => Promise<void>;
+  /** 未使用タグ一括削除ハンドラ */
+  onDeleteUnusedTags?: () => Promise<void>;
+  /** 未使用タグの件数（ボタン状態・ダイアログメッセージに使用） */
+  unusedTagCount?: number;
   /** 折りたたみ時に表示するタグ数（デフォルト: 5） */
   collapsedCount?: number;
 }
@@ -31,20 +35,48 @@ export function TagFilter({
   onToggleTag,
   onClear,
   onDeleteTag,
+  onDeleteUnusedTags,
+  unusedTagCount,
   collapsedCount = 5,
 }: TagFilterProps) {
   const selectedSet = new Set(selectedTagIds);
   const hasSelection = selectedSet.size > 0;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const shouldCollapse = tags.length > collapsedCount;
   const visibleTags = shouldCollapse && !isExpanded ? tags.slice(0, collapsedCount) : tags;
   const hiddenCount = tags.length - collapsedCount;
 
+  const handleBulkDelete = useCallback(async () => {
+    if (!onDeleteUnusedTags || unusedTagCount === 0) return;
+    const confirmed = window.confirm(
+      `${unusedTagCount}件の未使用タグを削除しますか？`
+    );
+    if (!confirmed) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteUnusedTags();
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [onDeleteUnusedTags, unusedTagCount]);
+
   return (
     <aside className={styles.sidebar} aria-label="Tag フィルター">
       <div className={styles.header}>
         <h2 className={styles.title}>Tags</h2>
+        {onDeleteUnusedTags && (
+          <button
+            type="button"
+            className={styles.bulkDeleteButton}
+            disabled={unusedTagCount === 0 || isDeleting}
+            onClick={handleBulkDelete}
+            aria-label="未使用タグを一括削除"
+          >
+            {isDeleting ? "削除中..." : "一括削除"}
+          </button>
+        )}
         {hasSelection && onClear !== undefined && (
           <button
             type="button"
